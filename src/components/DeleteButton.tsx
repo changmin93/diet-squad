@@ -1,7 +1,6 @@
 "use client";
 
 import { deletePost } from "@/app/actions/post";
-import { Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export default function DeleteButton({ postId }: { postId: string }) {
@@ -22,10 +21,9 @@ export default function DeleteButton({ postId }: { postId: string }) {
     <button
       onClick={handleDelete}
       disabled={loading}
-      className="p-1 text-zinc-300 hover:text-red-500 transition-colors disabled:opacity-50"
-      title="삭제하기"
+      className="text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors disabled:opacity-50 border border-red-100 px-2 py-0.5 rounded uppercase tracking-wider"
     >
-      <Trash2 className="w-4 h-4" />
+      {loading ? "지우는 중..." : "삭제"}
     </button>
   );
 }

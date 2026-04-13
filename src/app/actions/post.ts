@@ -35,30 +35,43 @@ export async function createPost(formData: FormData) {
   }
 }
 
-// 포스트 삭제 기능 추가
+// 포스트 삭제
 export async function deletePost(postId: string) {
   try {
-    const post = await prisma.post.findUnique({
-      where: { id: postId }
-    });
-
+    const post = await prisma.post.findUnique({ where: { id: postId } });
     if (!post) return { error: "게시물을 찾을 수 없습니다." };
-
-    // Vercel Blob에서 이미지 삭제 (기본 이미지가 아닌 경우만)
     if (post.imageUrl && post.imageUrl.includes("vercel-storage.com")) {
       await del(post.imageUrl);
     }
+    await prisma.post.delete({ where: { id: postId } });
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    return { error: "삭제 중 오류가 발생했습니다." };
+  }
+}
 
-    // 데이터베이스에서 게시물 삭제
-    await prisma.post.delete({
-      where: { id: postId }
+// 이름 변경 기능 추가
+export async function updateUserName(formData: FormData) {
+  const userId = formData.get("userId") as string;
+  const newName = formData.get("newName") as string;
+
+  if (!userId || !newName) return { error: "필요한 정보가 부족합니다." };
+
+  try {
+    // 새 이름 중복 체크
+    const existing = await prisma.user.findUnique({ where: { name: newName } });
+    if (existing) return { error: "이미 사용 중인 이름입니다!" };
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { name: newName }
     });
 
     revalidatePath("/");
     return { success: true };
   } catch (error) {
-    console.error("Delete error:", error);
-    return { error: "삭제 중 오류가 발생했습니다." };
+    return { error: "이름 변경 중 오류가 발생했습니다." };
   }
 }
 
@@ -96,7 +109,6 @@ export async function joinSquad(formData: FormData) {
     revalidatePath("/");
     return { success: true };
   } catch (error) {
-    console.error("Join error:", error);
     return { error: "멤버 등록 중 오류가 발생했습니다." };
   }
 }

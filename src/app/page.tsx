@@ -4,6 +4,7 @@ import Image from "next/image";
 import PostForm from "@/components/PostForm";
 import JoinForm from "@/components/JoinForm";
 import DeleteButton from "@/components/DeleteButton";
+import EditNameForm from "@/components/EditNameForm";
 
 export default async function Home() {
   // 실제 DB에서 사용자 및 게시물 데이터 가져오기
@@ -47,6 +48,7 @@ export default async function Home() {
         {/* Sidebar: Ranking & Profile */}
         <aside className="lg:col-span-4 space-y-6 order-2 lg:order-1">
           <JoinForm />
+          <EditNameForm users={allUsers} />
 
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
             <h2 className="text-sm font-semibold text-zinc-500 mb-4 flex items-center gap-2 uppercase tracking-wider">
@@ -89,7 +91,6 @@ export default async function Home() {
                 <div className="p-4 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden relative">
-                      {/* 프로필 이미지가 없을 때 기본 아이콘 표시 */}
                       <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
                         <Utensils className="w-5 h-5 text-zinc-400" />
                       </div>
@@ -102,7 +103,6 @@ export default async function Home() {
                       </div>
                     </div>
                   </div>
-                  {/* 삭제 버튼 추가 */}
                   <DeleteButton postId={post.id} />
                 </div>
                 {post.imageUrl && (
