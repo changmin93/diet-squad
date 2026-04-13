@@ -5,18 +5,26 @@ import PostForm from "@/components/PostForm";
 
 export default async function Home() {
   // 실제 DB에서 사용자 및 게시물 데이터 가져오기
-  const users = await prisma.user.findMany({
-    orderBy: { totalDemerits: "desc" },
-    take: 5,
-  });
+  let users = [];
+  let posts = [];
+  let allUsers = [];
 
-  const posts = await prisma.post.findMany({
-    include: { user: true },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
+  try {
+    users = await prisma.user.findMany({
+      orderBy: { totalDemerits: "desc" },
+      take: 5,
+    });
 
-  const allUsers = await prisma.user.findMany({ select: { id: true, name: true } });
+    posts = await prisma.post.findMany({
+      include: { user: true },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+
+    allUsers = await prisma.user.findMany({ select: { id: true, name: true } });
+  } catch (error) {
+    console.error("DB 로드 에러:", error);
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20">
