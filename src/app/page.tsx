@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Trophy, AlertCircle, Dumbbell, Utensils, Flame, User } from "lucide-react";
+import { Trophy, AlertCircle, Dumbbell, Utensils, Flame, User, LayoutGrid } from "lucide-react";
 import Image from "next/image";
 import PostForm from "@/components/PostForm";
 import JoinForm from "@/components/JoinForm";
@@ -9,8 +9,16 @@ import ReactionButtons from "@/components/ReactionButtons";
 import SettleButton from "@/components/SettleButton";
 import CommentSection from "@/components/CommentSection";
 import PenaltyHistoryView from "@/components/PenaltyHistory";
+import Link from "next/link";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  const params = await searchParams;
+  const categoryFilter = params.category; // "DIET" or "WORKOUT"
+
   let usersWithProgress = [];
   let posts = [];
 
@@ -45,7 +53,9 @@ export default async function Home() {
       return { ...user, workoutCount, dietCount, goal, progress };
     });
 
+    // 카테고리 필터 적용하여 포스트 가져오기
     posts = await prisma.post.findMany({
+      where: categoryFilter ? { category: categoryFilter } : {},
       include: { 
         user: true,
         comments: {
@@ -54,11 +64,11 @@ export default async function Home() {
         }
       },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 30,
     });
 
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20 overflow-x-hidden transition-colors duration-500">
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20 overflow-x-hidden">
         <header className="sticky top-0 z-20 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/20">
@@ -74,8 +84,7 @@ export default async function Home() {
             <JoinForm />
             <EditNameForm users={usersWithProgress} />
 
-            {/* Squad Status */}
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl p-6 overflow-hidden transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl p-6 overflow-hidden">
               <h2 className="text-xs font-black text-zinc-400 mb-6 flex items-center gap-2 uppercase tracking-[0.2em]">
                 <Trophy className="w-3.5 h-3.5" /> Ranking & Progress
               </h2>
@@ -112,9 +121,32 @@ export default async function Home() {
 
           <section className="lg:col-span-8 space-y-6 order-1 lg:order-2">
             <PostForm users={usersWithProgress} />
-            <div className="space-y-8">
+
+            {/* Category Filter Tabs */}
+            <div className="flex gap-2 p-1 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm sticky top-[4.5rem] z-10 backdrop-blur-sm bg-opacity-90">
+              <Link 
+                href="/"
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${!categoryFilter ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-lg shadow-zinc-900/20" : "text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"}`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" /> All
+              </Link>
+              <Link 
+                href="/?category=DIET"
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${categoryFilter === "DIET" ? "bg-green-500 text-white shadow-lg shadow-green-500/20" : "text-zinc-400 hover:bg-green-50 dark:hover:bg-green-950/20"}`}
+              >
+                <Utensils className="w-3.5 h-3.5" /> Diet
+              </Link>
+              <Link 
+                href="/?category=WORKOUT"
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${categoryFilter === "WORKOUT" ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20" : "text-zinc-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"}`}
+              >
+                <Dumbbell className="w-3.5 h-3.5" /> Work
+              </Link>
+            </div>
+
+            <div className="space-y-8 mt-4">
               {posts.map((post) => (
-                <div key={post.id} className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm group transition-all hover:shadow-2xl hover:-translate-y-1">
+                <div key={post.id} className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm group transition-all hover:shadow-2xl">
                   <div className="p-5 flex items-center justify-between border-b border-zinc-50 dark:border-zinc-800/50">
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-700">
@@ -122,7 +154,10 @@ export default async function Home() {
                       </div>
                       <div>
                         <div className="font-black text-[15px] tracking-tight">{post.user.name}</div>
-                        <div className="text-[10px] text-zinc-400 uppercase font-black tracking-widest">{post.category} · {new Date(post.createdAt).toLocaleDateString()}</div>
+                        <div className="text-[10px] text-zinc-400 uppercase font-black tracking-widest flex items-center gap-1.5">
+                          {post.category === "DIET" ? <Utensils className="w-3 h-3 text-green-500" /> : <Dumbbell className="w-3 h-3 text-blue-500" />}
+                          {post.category} · {new Date(post.createdAt).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
                     <DeleteButton postId={post.id} />
@@ -154,7 +189,12 @@ export default async function Home() {
                   </div>
                 </div>
               ))}
-              {posts.length === 0 && <div className="text-center py-32 font-black text-zinc-300 uppercase tracking-[0.3em] italic">No logs found.</div>}
+              {posts.length === 0 && (
+                <div className="text-center py-32 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 border-dashed">
+                  <div className="text-5xl mb-6 grayscale opacity-50">🥗</div>
+                  <p className="font-black text-zinc-400 uppercase tracking-widest text-sm">No {categoryFilter} logs yet.</p>
+                </div>
+              )}
             </div>
           </section>
         </main>
