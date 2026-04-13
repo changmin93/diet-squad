@@ -7,16 +7,17 @@ import DeleteButton from "@/components/DeleteButton";
 import EditNameForm from "@/components/EditNameForm";
 
 export default async function Home() {
-  // 실제 DB에서 사용자 및 게시물 데이터 가져오기
   let users = [];
   let posts = [];
-  let allUsers = [];
 
   try {
+    // 리더보드 및 모든 목록에서 사용할 사용자 정보 (가장 확실한 데이터)
     users = await prisma.user.findMany({
-      orderBy: { totalDemerits: "desc" },
-      take: 10,
+      orderBy: { name: "asc" }, // 가나다순 정렬
     });
+
+    // 벌점 순위는 따로 계산하거나 정렬해서 표시
+    const rankedUsers = [...users].sort((a, b) => b.totalDemerits - a.totalDemerits).slice(0, 10);
 
     posts = await prisma.post.findMany({
       include: { user: true },
@@ -24,107 +25,100 @@ export default async function Home() {
       take: 20,
     });
 
-    allUsers = await prisma.user.findMany({ 
-      select: { id: true, name: true },
-      orderBy: { name: "asc" }
-    });
-  } catch (error) {
-    console.error("DB 로드 에러:", error);
-  }
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20">
+        <header className="sticky top-0 z-10 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 h-14 flex items-center justify-between">
+          <h1 className="text-xl font-bold tracking-tight">Diet Squad</h1>
+          <div className="flex gap-2">
+             <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+              <PlusCircle className="w-6 h-6" />
+            </button>
+          </div>
+        </header>
 
-  return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 h-14 flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight">Diet Squad</h1>
-        <div className="flex gap-2">
-           <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
-            <PlusCircle className="w-6 h-6" />
-          </button>
-        </div>
-      </header>
+        <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-4">
+          <aside className="lg:col-span-4 space-y-6 order-2 lg:order-1">
+            <JoinForm />
+            {/* 리더보드에 보이는 users를 똑같이 전달 */}
+            <EditNameForm users={users} />
 
-      <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-4">
-        {/* Sidebar: Ranking & Profile */}
-        <aside className="lg:col-span-4 space-y-6 order-2 lg:order-1">
-          <JoinForm />
-          <EditNameForm users={allUsers} />
-
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-            <h2 className="text-sm font-semibold text-zinc-500 mb-4 flex items-center gap-2 uppercase tracking-wider">
-              <Trophy className="w-4 h-4" /> Penalty Leaderboard
-            </h2>
-            <div className="space-y-4">
-              {users.length > 0 ? users.map((user, idx) => (
-                <div key={user.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center font-bold text-sm">
-                      {idx + 1}
+            <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+              <h2 className="text-sm font-semibold text-zinc-500 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                <Trophy className="w-4 h-4" /> Penalty Leaderboard
+              </h2>
+              <div className="space-y-4">
+                {rankedUsers.length > 0 ? rankedUsers.map((user, idx) => (
+                  <div key={user.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center font-bold text-sm">
+                        {idx + 1}
+                      </div>
+                      <span className="font-medium">{user.name}</span>
                     </div>
-                    <span className="font-medium">{user.name}</span>
+                    <div className="flex items-center gap-1 text-red-500 font-bold">
+                      <AlertCircle className="w-4 h-4" /> {user.totalDemerits}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-red-500 font-bold">
-                    <AlertCircle className="w-4 h-4" /> {user.totalDemerits}
+                )) : (
+                  <p className="text-zinc-500 text-sm">아직 등록된 사용자가 없습니다.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-zinc-900 text-white p-6 rounded-2xl border border-zinc-800 shadow-sm">
+              <h3 className="font-bold text-lg mb-2">벌점 피하는 법 💡</h3>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                매주 일요일 자정까지 설정한 목표 횟수를 채우지 못하면, 부족한 횟수만큼 벌점이 자동으로 추가됩니다!
+              </p>
+            </div>
+          </aside>
+
+          <section className="lg:col-span-8 space-y-6 order-1 lg:order-2">
+            <PostForm users={users} />
+
+            <div className="space-y-6">
+              {posts.length > 0 ? posts.map((post) => (
+                <div key={post.id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+                  <div className="p-4 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden relative">
+                        <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                          <Utensils className="w-5 h-5 text-zinc-400" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm">{post.user.name}</div>
+                        <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest flex items-center gap-1">
+                          {post.category === "DIET" ? <Utensils className="w-3 h-3" /> : <Dumbbell className="w-3 h-3" />}
+                          {post.category} · {new Date(post.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    <DeleteButton postId={post.id} />
+                  </div>
+                  {post.imageUrl && (
+                    <div className="aspect-square relative bg-zinc-100 dark:bg-zinc-800">
+                      <Image src={post.imageUrl} alt="certification" fill className="object-cover" />
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                      {post.content}
+                    </p>
                   </div>
                 </div>
               )) : (
-                <p className="text-zinc-500 text-sm">아직 등록된 사용자가 없습니다.</p>
+                <div className="text-center py-20 text-zinc-500">
+                  <div className="text-4xl mb-4">🥗</div>
+                  <p>아직 올라온 인증이 없습니다.<br/>첫 인증을 남겨보세요!</p>
+                </div>
               )}
             </div>
-          </div>
-
-          <div className="bg-zinc-900 text-white p-6 rounded-2xl border border-zinc-800 shadow-sm">
-            <h3 className="font-bold text-lg mb-2">벌점 피하는 법 💡</h3>
-            <p className="text-sm text-zinc-400 leading-relaxed">
-              매주 일요일 자정까지 설정한 목표 횟수를 채우지 못하면, 부족한 횟수만큼 벌점이 자동으로 추가됩니다!
-            </p>
-          </div>
-        </aside>
-
-        {/* Main: Feed */}
-        <section className="lg:col-span-8 space-y-6 order-1 lg:order-2">
-          <PostForm users={allUsers} />
-
-          <div className="space-y-6">
-            {posts.length > 0 ? posts.map((post) => (
-              <div key={post.id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-                <div className="p-4 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden relative">
-                      <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                        <Utensils className="w-5 h-5 text-zinc-400" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm">{post.user.name}</div>
-                      <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest flex items-center gap-1">
-                        {post.category === "DIET" ? <Utensils className="w-3 h-3" /> : <Dumbbell className="w-3 h-3" />}
-                        {post.category} · {new Date(post.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                  <DeleteButton postId={post.id} />
-                </div>
-                {post.imageUrl && (
-                  <div className="aspect-square relative bg-zinc-100 dark:bg-zinc-800">
-                    <Image src={post.imageUrl} alt="certification" fill className="object-cover" />
-                  </div>
-                )}
-                <div className="p-4">
-                  <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                    {post.content}
-                  </p>
-                </div>
-              </div>
-            )) : (
-              <div className="text-center py-20 text-zinc-500">
-                <div className="text-4xl mb-4">🥗</div>
-                <p>아직 올라온 인증이 없습니다.<br/>첫 인증을 남겨보세요!</p>
-              </div>
-            )}
-          </div>
-        </section>
-      </main>
-    </div>
-  );
+          </section>
+        </main>
+      </div>
+    );
+  } catch (error) {
+    return <div className="p-20 text-center">데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</div>;
+  }
 }
