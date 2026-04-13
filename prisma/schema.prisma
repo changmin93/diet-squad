@@ -36,6 +36,7 @@ model Post {
   imageUrl  String
   content   String?
   category  String   // "DIET" or "WORKOUT"
+  likes     Int      @default(0) // 좋아요(응원) 수 추가
   createdAt DateTime @default(now())
 }
 
