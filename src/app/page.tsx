@@ -3,6 +3,7 @@ import { Trophy, AlertCircle, Dumbbell, Utensils, PlusCircle } from "lucide-reac
 import Image from "next/image";
 import PostForm from "@/components/PostForm";
 import JoinForm from "@/components/JoinForm";
+import DeleteButton from "@/components/DeleteButton";
 
 export default async function Home() {
   // 실제 DB에서 사용자 및 게시물 데이터 가져오기
@@ -13,7 +14,7 @@ export default async function Home() {
   try {
     users = await prisma.user.findMany({
       orderBy: { totalDemerits: "desc" },
-      take: 10, // 5명 이상일 수 있으므로 넉넉히 가져옴
+      take: 10,
     });
 
     posts = await prisma.post.findMany({
@@ -45,7 +46,6 @@ export default async function Home() {
       <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-4">
         {/* Sidebar: Ranking & Profile */}
         <aside className="lg:col-span-4 space-y-6 order-2 lg:order-1">
-          {/* Join Form 추가 */}
           <JoinForm />
 
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
@@ -81,26 +81,29 @@ export default async function Home() {
 
         {/* Main: Feed */}
         <section className="lg:col-span-8 space-y-6 order-1 lg:order-2">
-          {/* Post Form 추가 */}
           <PostForm users={allUsers} />
 
-          {/* Feed List */}
           <div className="space-y-6">
             {posts.length > 0 ? posts.map((post) => (
               <div key={post.id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-                <div className="p-4 flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800">
-                  <div className="w-10 h-10 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden relative">
-                    {post.user.profileImage && (
-                      <Image src={post.user.profileImage} alt={post.user.name} fill className="object-cover" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm">{post.user.name}</div>
-                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest flex items-center gap-1">
-                      {post.category === "DIET" ? <Utensils className="w-3 h-3" /> : <Dumbbell className="w-3 h-3" />}
-                      {post.category} · {new Date(post.createdAt).toLocaleDateString()}
+                <div className="p-4 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden relative">
+                      {/* 프로필 이미지가 없을 때 기본 아이콘 표시 */}
+                      <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                        <Utensils className="w-5 h-5 text-zinc-400" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm">{post.user.name}</div>
+                      <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest flex items-center gap-1">
+                        {post.category === "DIET" ? <Utensils className="w-3 h-3" /> : <Dumbbell className="w-3 h-3" />}
+                        {post.category} · {new Date(post.createdAt).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
+                  {/* 삭제 버튼 추가 */}
+                  <DeleteButton postId={post.id} />
                 </div>
                 {post.imageUrl && (
                   <div className="aspect-square relative bg-zinc-100 dark:bg-zinc-800">

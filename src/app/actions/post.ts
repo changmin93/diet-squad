@@ -2,9 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { put } from "@vercel/blob";
+import { put, del } from "@vercel/blob";
 
-// 포스트 생성 (식단/운동 인증) - Vercel Blob 적용
+// 포스트 생성 (식단/운동 인증)
 export async function createPost(formData: FormData) {
   const userId = formData.get("userId") as string;
   const content = formData.get("content") as string;
@@ -16,12 +16,11 @@ export async function createPost(formData: FormData) {
   let imageUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80";
 
   try {
-    // Vercel Blob을 사용하여 이미지 업로드
     if (imageFile && imageFile.size > 0) {
       const blob = await put(imageFile.name, imageFile, {
         access: 'public',
       });
-      imageUrl = blob.url; // 인터넷에서 접속 가능한 URL로 변경
+      imageUrl = blob.url;
     }
 
     await prisma.post.create({
@@ -32,11 +31,38 @@ export async function createPost(formData: FormData) {
     return { success: true };
   } catch (error) {
     console.error("Upload error:", error);
-    return { error: "이미지 저장 중 오류가 발생했습니다. (Blob 설정 확인 필요)" };
+    return { error: "저장 중 오류가 발생했습니다." };
   }
 }
 
-// 신규 멤버 등록 (친구 스스로 가입)
+// 포스트 삭제 기능 추가
+export async function deletePost(postId: string) {
+  try {
+    const post = await prisma.post.findUnique({
+      where: { id: postId }
+    });
+
+    if (!post) return { error: "게시물을 찾을 수 없습니다." };
+
+    // Vercel Blob에서 이미지 삭제 (기본 이미지가 아닌 경우만)
+    if (post.imageUrl && post.imageUrl.includes("vercel-storage.com")) {
+      await del(post.imageUrl);
+    }
+
+    // 데이터베이스에서 게시물 삭제
+    await prisma.post.delete({
+      where: { id: postId }
+    });
+
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Delete error:", error);
+    return { error: "삭제 중 오류가 발생했습니다." };
+  }
+}
+
+// 신규 멤버 등록
 export async function joinSquad(formData: FormData) {
   const name = formData.get("name") as string;
   const workoutTarget = parseInt(formData.get("workoutTarget") as string) || 3;
