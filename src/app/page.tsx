@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Trophy, AlertCircle, Dumbbell, Utensils, PlusCircle } from "lucide-react";
 import Image from "next/image";
 import PostForm from "@/components/PostForm";
+import JoinForm from "@/components/JoinForm";
 
 export default async function Home() {
   // 실제 DB에서 사용자 및 게시물 데이터 가져오기
@@ -12,16 +13,19 @@ export default async function Home() {
   try {
     users = await prisma.user.findMany({
       orderBy: { totalDemerits: "desc" },
-      take: 5,
+      take: 10, // 5명 이상일 수 있으므로 넉넉히 가져옴
     });
 
     posts = await prisma.post.findMany({
       include: { user: true },
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: 20,
     });
 
-    allUsers = await prisma.user.findMany({ select: { id: true, name: true } });
+    allUsers = await prisma.user.findMany({ 
+      select: { id: true, name: true },
+      orderBy: { name: "asc" }
+    });
   } catch (error) {
     console.error("DB 로드 에러:", error);
   }
@@ -41,6 +45,9 @@ export default async function Home() {
       <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-4">
         {/* Sidebar: Ranking & Profile */}
         <aside className="lg:col-span-4 space-y-6 order-2 lg:order-1">
+          {/* Join Form 추가 */}
+          <JoinForm />
+
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
             <h2 className="text-sm font-semibold text-zinc-500 mb-4 flex items-center gap-2 uppercase tracking-wider">
               <Trophy className="w-4 h-4" /> Penalty Leaderboard
