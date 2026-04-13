@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
-import { Trophy, AlertCircle, Dumbbell, Utensils, Flame, Heart, Target, User } from "lucide-react";
+import { Trophy, AlertCircle, Dumbbell, Utensils, Flame, User } from "lucide-react";
 import Image from "next/image";
 import PostForm from "@/components/PostForm";
 import JoinForm from "@/components/JoinForm";
 import DeleteButton from "@/components/DeleteButton";
 import EditNameForm from "@/components/EditNameForm";
-import LikeButton from "@/components/LikeButton";
+import ReactionButtons from "@/components/ReactionButtons";
 import SettleButton from "@/components/SettleButton";
+import CommentSection from "@/components/CommentSection";
+import PenaltyHistoryView from "@/components/PenaltyHistory";
 
 export default async function Home() {
   let usersWithProgress = [];
@@ -44,21 +46,27 @@ export default async function Home() {
     });
 
     posts = await prisma.post.findMany({
-      include: { user: true },
+      include: { 
+        user: true,
+        comments: {
+          include: { user: true },
+          orderBy: { createdAt: "asc" }
+        }
+      },
       orderBy: { createdAt: "desc" },
-      take: 30,
+      take: 20,
     });
 
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20 overflow-x-hidden">
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20 overflow-x-hidden transition-colors duration-500">
         <header className="sticky top-0 z-20 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/20">
               <Flame className="w-5 h-5 text-white fill-white" />
             </div>
-            <h1 className="text-lg font-black tracking-tight uppercase italic text-red-500">Diet Squad</h1>
+            <h1 className="text-lg font-black tracking-tighter uppercase italic text-red-500">Diet Squad</h1>
           </div>
-          <div className="text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-full uppercase tracking-tighter">Week {currentWeek}</div>
+          <div className="text-[10px] font-black bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full uppercase tracking-widest text-zinc-500">Week {currentWeek}</div>
         </header>
 
         <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-4">
@@ -66,85 +74,93 @@ export default async function Home() {
             <JoinForm />
             <EditNameForm users={usersWithProgress} />
 
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl p-6 overflow-hidden">
+            {/* Squad Status */}
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl p-6 overflow-hidden transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
               <h2 className="text-xs font-black text-zinc-400 mb-6 flex items-center gap-2 uppercase tracking-[0.2em]">
-                <Trophy className="w-3.5 h-3.5" /> Squad Status
+                <Trophy className="w-3.5 h-3.5" /> Ranking & Progress
               </h2>
               <div className="space-y-6">
-                {usersWithProgress.length > 0 ? usersWithProgress.map((user, idx) => (
-                  <div key={user.id} className="space-y-2">
+                {usersWithProgress.map((user, idx) => (
+                  <div key={user.id} className="space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-700">
-                          {user.profileImage ? (
-                            <Image src={user.profileImage} alt={user.name} width={32} height={32} className="object-cover" />
-                          ) : (
-                            <User className="w-4 h-4 text-zinc-400" />
-                          )}
+                        <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-700 ring-2 ring-zinc-50 dark:ring-zinc-800">
+                          {user.profileImage ? <Image src={user.profileImage} alt={user.name} width={32} height={32} className="object-cover" /> : <User className="w-4 h-4 text-zinc-400" />}
                         </div>
-                        <span className="font-bold text-sm">{user.name}</span>
+                        <span className="font-bold text-sm tracking-tight">{user.name}</span>
                       </div>
                       <div className="flex items-center gap-1 text-red-500 font-black text-sm">
                         <AlertCircle className="w-3.5 h-3.5" /> {user.totalDemerits}
                       </div>
                     </div>
-                    <div className="relative h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                      <div className={`absolute h-full transition-all duration-1000 ease-out rounded-full ${user.progress >= 100 ? "bg-green-500" : "bg-red-500"}`} style={{ width: `${user.progress}%` }}></div>
+                    <div className="relative h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div className={`absolute h-full transition-all duration-1000 ease-out rounded-full ${user.progress >= 100 ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" : "bg-red-500"}`} style={{ width: `${user.progress}%` }}></div>
                     </div>
-                    <div className="flex justify-between text-[9px] font-black text-zinc-400 uppercase">
-                      <span>Work {user.workoutCount}/{user.goal.workoutTarget}</span>
-                      <span>Diet {user.dietCount}/{user.goal.dietTarget}</span>
+                    <div className="flex justify-between text-[9px] font-black text-zinc-400 uppercase tracking-tighter">
+                      <span>W {user.workoutCount}/{user.goal.workoutTarget}</span>
+                      <span>D {user.dietCount}/{user.goal.dietTarget}</span>
+                      <span className={user.progress >= 100 ? "text-green-500" : ""}>{user.progress}%</span>
                     </div>
                   </div>
-                )) : <p className="text-zinc-500 text-sm py-4 text-center">No members yet.</p>}
+                ))}
               </div>
               <SettleButton />
             </div>
+
+            <PenaltyHistoryView />
           </aside>
 
           <section className="lg:col-span-8 space-y-6 order-1 lg:order-2">
             <PostForm users={usersWithProgress} />
             <div className="space-y-8">
-              {posts.length > 0 ? posts.map((post) => (
-                <div key={post.id} className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm group">
-                  <div className="p-4 flex items-center justify-between border-b border-zinc-50 dark:border-zinc-800">
+              {posts.map((post) => (
+                <div key={post.id} className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm group transition-all hover:shadow-2xl hover:-translate-y-1">
+                  <div className="p-5 flex items-center justify-between border-b border-zinc-50 dark:border-zinc-800/50">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-700">
-                        {post.user.profileImage ? (
-                          <Image src={post.user.profileImage} alt={post.user.name} width={40} height={40} className="object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-zinc-50 dark:bg-zinc-800 font-bold text-zinc-400 text-xs">?</div>
-                        )}
+                      <div className="w-11 h-11 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                        {post.user.profileImage ? <Image src={post.user.profileImage} alt={post.user.name} width={44} height={44} className="object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 font-black text-zinc-400 text-xs">?</div>}
                       </div>
                       <div>
-                        <div className="font-black text-sm">{post.user.name}</div>
+                        <div className="font-black text-[15px] tracking-tight">{post.user.name}</div>
                         <div className="text-[10px] text-zinc-400 uppercase font-black tracking-widest">{post.category} · {new Date(post.createdAt).toLocaleDateString()}</div>
                       </div>
                     </div>
-                    {/* 삭제 버튼 복구! */}
-                    <div className="flex items-center gap-2">
-                       <DeleteButton postId={post.id} />
-                    </div>
+                    <DeleteButton postId={post.id} />
                   </div>
                   {post.imageUrl && (
-                    <div className="aspect-[4/5] relative bg-zinc-100 dark:bg-zinc-800">
-                      <Image src={post.imageUrl} alt="certification" fill className="object-cover" />
+                    <div className="aspect-[4/5] relative bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                      <Image src={post.imageUrl} alt="post" fill className="object-cover group-hover:scale-105 transition-transform duration-1000" />
                     </div>
                   )}
-                  <div className="p-5 space-y-4">
-                    <p className="text-sm text-zinc-700 dark:text-zinc-300 font-medium leading-relaxed whitespace-pre-wrap">{post.content}</p>
-                    <div className="pt-2 border-t border-zinc-50 dark:border-zinc-800/50 flex justify-between items-center">
-                       <LikeButton postId={post.id} initialLikes={post.likes} />
+                  <div className="p-6 space-y-5">
+                    <p className="text-[15px] text-zinc-700 dark:text-zinc-300 font-medium leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                    
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center justify-between border-t border-zinc-50 dark:border-zinc-800/50 pt-4">
+                        <ReactionButtons 
+                          postId={post.id} 
+                          initialLikes={post.likes} 
+                          initialFire={post.fire} 
+                          initialStrong={post.strong} 
+                        />
+                      </div>
+                      
+                      <CommentSection 
+                        postId={post.id} 
+                        comments={post.comments} 
+                        users={usersWithProgress} 
+                      />
                     </div>
                   </div>
                 </div>
-              )) : <div className="text-center py-32 font-black text-zinc-300 uppercase tracking-widest">Waiting for logs...</div>}
+              ))}
+              {posts.length === 0 && <div className="text-center py-32 font-black text-zinc-300 uppercase tracking-[0.3em] italic">No logs found.</div>}
             </div>
           </section>
         </main>
       </div>
     );
   } catch (error) {
-    return <div className="p-20 text-center font-black">SYSTEM ERROR. RELOAD SOON.</div>;
+    return <div className="min-h-screen flex items-center justify-center font-black uppercase tracking-widest text-red-500">System Error. Refresh Soon.</div>;
   }
 }

@@ -14,6 +14,7 @@ model User {
   totalDemerits   Int              @default(0)
   goals           WeeklyGoal[]
   posts           Post[]
+  comments        Comment[]        // 댓글 관계 추가
   penaltyHistory  PenaltyHistory[]
   createdAt       DateTime         @default(now())
 }
@@ -35,8 +36,21 @@ model Post {
   user      User     @relation(fields: [userId], references: [id])
   imageUrl  String
   content   String?
-  category  String   // "DIET" or "WORKOUT"
-  likes     Int      @default(0) // 좋아요(응원) 수 추가
+  category  String   
+  likes     Int      @default(0)
+  fire      Int      @default(0) // 불꽃 리액션 추가
+  strong    Int      @default(0) // 근육 리액션 추가
+  comments  Comment[]           // 댓글 관계 추가
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
   createdAt DateTime @default(now())
 }
 
