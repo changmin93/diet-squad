@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL") // Vercel에서 제공하는 URL 변수명
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  profileImage    String?
+  totalDemerits   Int              @default(0)
+  goals           WeeklyGoal[]
+  posts           Post[]
+  penaltyHistory  PenaltyHistory[]
+  createdAt       DateTime         @default(now())
+}
+
+model WeeklyGoal {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  year           Int
+  week           Int
+  workoutTarget  Int      @default(3)
+  dietTarget     Int      @default(5)
+  @@unique([userId, year, week])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  imageUrl  String
+  content   String?
+  category  String   // "DIET" or "WORKOUT"
+  createdAt DateTime @default(now())
+}
+
+model PenaltyHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  year      Int
+  week      Int
+  points    Int
+  reason    String
+  createdAt DateTime @default(now())
+}
