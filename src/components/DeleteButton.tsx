@@ -1,6 +1,7 @@
 "use client";
 
 import { deletePost } from "@/app/actions/post";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export default function DeleteButton({ postId }: { postId: string }) {
@@ -9,9 +10,16 @@ export default function DeleteButton({ postId }: { postId: string }) {
   async function handleDelete() {
     if (confirm("정말로 이 기록을 삭제할까요?")) {
       setLoading(true);
-      const res = await deletePost(postId);
-      if (!res.success) {
-        alert(res.error);
+      try {
+        const res = await deletePost(postId);
+        if (res.success) {
+          // 성공 시 별도 알림 없이 서버 액션의 revalidatePath로 자동 갱신됨
+        } else {
+          alert(res.error || "삭제에 실패했습니다.");
+          setLoading(false);
+        }
+      } catch (err) {
+        alert("통신 오류가 발생했습니다.");
         setLoading(false);
       }
     }
@@ -21,9 +29,14 @@ export default function DeleteButton({ postId }: { postId: string }) {
     <button
       onClick={handleDelete}
       disabled={loading}
-      className="text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors disabled:opacity-50 border border-red-100 px-2 py-0.5 rounded uppercase tracking-wider"
+      className="p-2 text-zinc-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-all disabled:opacity-50"
+      title="삭제하기"
     >
-      {loading ? "지우는 중..." : "삭제"}
+      {loading ? (
+        <span className="text-[10px] animate-pulse">...</span>
+      ) : (
+        <Trash2 className="w-4 h-4" />
+      )}
     </button>
   );
 }
