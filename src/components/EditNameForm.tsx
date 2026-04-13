@@ -53,10 +53,16 @@ export default function EditNameForm({ users }: { users: UserType[] }) {
           <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-100 dark:border-zinc-800">
             <User className="w-4 h-4 text-zinc-400" />
             <select name="userId" className="bg-transparent border-none outline-none text-sm w-full font-medium" required defaultValue="">
-              <option value="" disabled>누구의 이름을 바꿀까요?</option>
-              {users.map(user => (
-                <option key={user.id} value={user.id}>{user.name}</option>
-              ))}
+              {users.length > 0 ? (
+                <>
+                  <option value="" disabled>누구의 이름을 바꿀까요?</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.name}</option>
+                  ))}
+                </>
+              ) : (
+                <option value="" disabled>등록된 멤버가 없습니다. 먼저 가입해주세요!</option>
+              )}
             </select>
           </div>
         </div>
