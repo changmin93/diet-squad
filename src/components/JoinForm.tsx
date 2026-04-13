@@ -1,12 +1,24 @@
 "use client";
 
 import { joinSquad } from "@/app/actions/post";
-import { UserPlus, Target, X } from "lucide-react";
-import { useState } from "react";
+import { UserPlus, Target, X, Camera } from "lucide-react";
+import { useState, useRef } from "react";
+import Image from "next/image";
 
 export default function JoinForm() {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -14,6 +26,7 @@ export default function JoinForm() {
     if (res.success) {
       alert("다이어트 군단 합류 완료! 🎉");
       setIsOpen(false);
+      setPreview(null);
     } else {
       alert(res.error);
     }
@@ -43,6 +56,25 @@ export default function JoinForm() {
       </div>
 
       <form action={handleSubmit} className="space-y-4">
+        {/* 프로필 이미지 업로드 */}
+        <div className="flex flex-col items-center gap-3 py-2">
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-zinc-500 transition-all relative group"
+          >
+            {preview ? (
+              <Image src={preview} alt="Profile" fill className="object-cover" />
+            ) : (
+              <Camera className="w-6 h-6 text-zinc-400" />
+            )}
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+               <Camera className="w-5 h-5 text-white" />
+            </div>
+          </div>
+          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">프로필 사진 (선택)</span>
+          <input type="file" name="profileImage" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImageChange} />
+        </div>
+
         <div className="space-y-1">
           <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">내 이름</label>
           <input
@@ -57,27 +89,11 @@ export default function JoinForm() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">주간 운동 목표</label>
-            <input
-              type="number"
-              name="workoutTarget"
-              defaultValue="3"
-              min="1"
-              max="7"
-              required
-              className="w-full bg-zinc-50 dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-100 dark:border-zinc-800 text-sm outline-none focus:ring-2 ring-zinc-900 dark:ring-zinc-100 transition-all"
-            />
+            <input type="number" name="workoutTarget" defaultValue="3" min="1" max="7" required className="w-full bg-zinc-50 dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-100 dark:border-zinc-800 text-sm outline-none transition-all" />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">주간 식단 목표</label>
-            <input
-              type="number"
-              name="dietTarget"
-              defaultValue="5"
-              min="1"
-              max="21"
-              required
-              className="w-full bg-zinc-50 dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-100 dark:border-zinc-800 text-sm outline-none focus:ring-2 ring-zinc-900 dark:ring-zinc-100 transition-all"
-            />
+            <input type="number" name="dietTarget" defaultValue="5" min="1" max="21" required className="w-full bg-zinc-50 dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-100 dark:border-zinc-800 text-sm outline-none transition-all" />
           </div>
         </div>
 
